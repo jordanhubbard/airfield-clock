@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<iq:manifest version="3" xmlns:iq="http://www.garmin.com/xml/connectiq">
+    <iq:application id="a42a0f60-3f7d-4e85-9b0e-b5c5086df613" type="watchface" name="@Strings.AppName" entry="AirfieldClockApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="5.1.0">
+        <iq:products>
+            <!-- D2 Air X15 shares this Connect IQ target with Venu 4 45 mm. -->
+            <iq:product id="venu445mm"/>
+        </iq:products>
+        <iq:permissions>
+            <iq:uses-permission id="Background"/>
+            <iq:uses-permission id="Communications"/>
+            <iq:uses-permission id="Positioning"/>
+        </iq:permissions>
+        <iq:languages><iq:language>eng</iq:language></iq:languages>
+    </iq:application>
+</iq:manifest>
