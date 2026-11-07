@@ -19,7 +19,12 @@ class AirportWeatherService extends System.ServiceDelegate {
 
     function onTemporalEvent() {
         // Keep the next attempt registered even if a request times out.
-        Background.registerForTemporalEvent(new Time.Duration(30 * 60));
+        Storage.setValue("metarStatus", "STARTED");
+        try {
+            Background.registerForTemporalEvent(new Time.Duration(30 * 60));
+        } catch (e) {
+            // Continue this fetch even if the following retry cannot be set.
+        }
         _nearby = Storage.getValue("airportMode") == "nearby";
         var url;
         if (_nearby) {

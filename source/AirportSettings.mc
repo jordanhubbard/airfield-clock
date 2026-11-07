@@ -1,5 +1,6 @@
 import Toybox.Application.Storage;
 import Toybox.Background;
+import Toybox.Lang;
 import Toybox.Time;
 import Toybox.WatchUi;
 
@@ -110,8 +111,28 @@ function setAirport(code) {
 
 function scheduleWeatherSoon() {
     try {
-        Background.registerForTemporalEvent(Time.now().add(new Time.Duration(6 * 60)));
+        var next = Time.now().add(new Time.Duration(6 * 60));
+        // A Duration keeps the initial retry alive if one wake is missed.
+        // The service replaces it with its normal 30-minute interval.
+        Background.registerForTemporalEvent(new Time.Duration(6 * 60));
+        Storage.setValue("weatherScheduledEpoch", next.value());
+        Storage.setValue("weatherScheduleVersion", 3);
+        return true;
     } catch (e) {
         Storage.setValue("metarStatus", "SCHEDULE ERROR");
+        return false;
+    }
+}
+
+function ensureWeatherRetry() {
+    var status = Storage.getValue("metarStatus");
+    if (status != "WAIT FETCH" && status != "TIMER RETRY" &&
+        status != "SCHEDULE ERROR") { return; }
+    var scheduled = Storage.getValue("weatherScheduledEpoch");
+    if (!(scheduled instanceof Number) ||
+        Time.now().value() > scheduled + 2 * 60) {
+        if (scheduleWeatherSoon()) {
+            Storage.setValue("metarStatus", "TIMER RETRY");
+        }
     }
 }

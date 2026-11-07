@@ -15,14 +15,16 @@ This is a sideloaded build, not a Connect IQ Store listing. The [Garmin sideload
 
 ## Airport and weather
 
-Open the watch face's **Settings → Airports** menu to choose:
+On the D2 Air X15, start at the Airfield Clock time screen and swipe right to left. Open **Watch Face**, scroll to the **Airfield Clock** preview, tap that preview, swipe right to left again, then select **Customize**. The menu title is **Airports**. This is the watch face's own menu, not the watch's general Settings app.
+
+Choose:
 
 - **Show home airport** to return to your saved home airport.
 - **Set home ICAO** to change the default from KPAO to a four-character ICAO identifier.
 - **Show another ICAO** for a temporary airport without changing home.
 - **Nearby reporting airport** to choose the closest reporting station near the watch's cached Garmin Weather observation location. The cached location can lag travel or be unavailable; use a manual ICAO if it does not update.
 
-The face asks the [Aviation Weather Center API](https://aviationweather.gov/data/api/) for METAR data in a Connect IQ background service. It retries every 30 minutes and may take several minutes after installation or an airport change. A phone connection with a working Garmin Connect/Connect IQ network path is needed for weather downloads. A report older than two hours is hidden. The bottom line shows the UTC observation time or a status such as `METAR WAIT LOCATION`, `METAR FETCHING`, `METAR TIMEOUT`, `METAR NET <code>`, or `METAR NO METAR`.
+The face asks the [Aviation Weather Center API](https://aviationweather.gov/data/api/) for METAR data in a Connect IQ background service. It schedules a repeating six-minute event after installation or an airport change, then switches to a 30-minute interval after the service starts. If an initial event is missed, the face re-registers it when active and shows `METAR TIMER RETRY`. A phone connection with a working Garmin Connect/Connect IQ network path is needed for weather downloads. A report older than two hours is hidden. The bottom line shows the UTC observation time or a status such as `METAR WAIT LOCATION`, `METAR FETCHING`, `METAR TIMEOUT`, `METAR NET <code>`, or `METAR NO METAR`.
 
 The wind bearing is the direction **from** which the reported wind blows. The perimeter is a fixed north-up reference; Connect IQ watch faces cannot read the compass sensor, so it is not a live heading indicator. Garmin Pilot flight-plan and avionics data are not exposed through a documented public Connect IQ interface for this face. Weather shown here is supplemental and should not be used for flight decisions.
 
@@ -54,4 +56,4 @@ The `.iq` file is **not** the USB installation file. Store publication requires 
 
 ## Development status
 
-The SDK 9.3.0 release build compiles for `venu445mm`. In the simulator, the background service received an HTTP 200 response for KPAO after weather-timer registration moved to the foreground startup. The Aviation Weather Center also responds to nearby-airport queries. The v0.2.2 build installed and appeared on a physical D2 Air X15; its weather fetch is still being checked on the watch. A fresh weather timer or manual airport change schedules a fetch six minutes later. If METAR stays blank after installing the latest release, report the exact status on the bottom line; it distinguishes a missing location from a request or network failure.
+The SDK 9.3.0 release build compiles for `venu445mm`. In the simulator, the background service received an HTTP 200 response for KPAO. The Aviation Weather Center also responds to nearby-airport queries. The v0.2.2 build installed and appeared on a physical D2 Air X15, but stayed at `METAR WAIT FETCH` for more than 30 minutes even after KPAO was reselected. The current source changes the initial timer to a repeating event, retries overdue registration, and enlarges the content by roughly 25% while moving the compass ring to the edge of the drawable display. This revision has not yet been verified on the physical watch. If METAR stays blank after installing it, report the exact bottom-line status; it distinguishes a missing location from a timer, request, or network failure.

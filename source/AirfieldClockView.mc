@@ -13,17 +13,20 @@ class AirfieldClockView extends WatchUi.WatchFace {
     var _utcFont;
     var _badgeFont;
     var _labelFont;
+    var _statusFont;
 
     function initialize() {
         WatchFace.initialize();
-        _timeFont = Graphics.getVectorFont({:face => "RobotoCondensedBold", :size => 94});
-        _utcFont = Graphics.getVectorFont({:face => "RobotoCondensedBold", :size => 38});
-        _badgeFont = Graphics.getVectorFont({:face => "RobotoCondensedBold", :size => 25});
-        _labelFont = Graphics.getVectorFont({:face => "RobotoRegular", :size => 20});
+        _timeFont = Graphics.getVectorFont({:face => "RobotoCondensedBold", :size => 118});
+        _utcFont = Graphics.getVectorFont({:face => "RobotoCondensedBold", :size => 48});
+        _badgeFont = Graphics.getVectorFont({:face => "RobotoCondensedBold", :size => 31});
+        _labelFont = Graphics.getVectorFont({:face => "RobotoRegular", :size => 25});
+        _statusFont = Graphics.getVectorFont({:face => "RobotoRegular", :size => 17});
         if (_timeFont == null) { _timeFont = Graphics.FONT_NUMBER_HOT; }
         if (_utcFont == null) { _utcFont = Graphics.FONT_MEDIUM; }
         if (_badgeFont == null) { _badgeFont = Graphics.FONT_SMALL; }
         if (_labelFont == null) { _labelFont = Graphics.FONT_XTINY; }
+        if (_statusFont == null) { _statusFont = Graphics.FONT_XTINY; }
     }
 
     function onEnterSleep() {
@@ -38,11 +41,11 @@ class AirfieldClockView extends WatchUi.WatchFace {
         var w = dc.getWidth();
         var h = dc.getHeight();
         var cx = w / 2;
-        var scale = w / 454.0;
+        var scale = Math.min(w, h) / 454.0;
         dc.setAntiAlias(true);
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
-        drawCompassRing(dc, cx, h / 2, scale, _labelFont);
+        drawCompassRing(dc, cx, h / 2, scale, _statusFont);
 
         var local = System.getClockTime();
         var utc = Gregorian.utcInfo(Time.now(), Time.FORMAT_SHORT);
@@ -59,6 +62,7 @@ class AirfieldClockView extends WatchUi.WatchFace {
             return;
         }
 
+        ensureWeatherRetry();
         updateNearbyPosition();
 
         var airport = Storage.getValue("airport");
@@ -86,20 +90,20 @@ class AirfieldClockView extends WatchUi.WatchFace {
         } else {
             airportLabel = airport == home ? "HOME  /  " + airport : "AIRFIELD  /  " + airport;
         }
-        dc.drawText(cx, 77 * scale, _labelFont, airportLabel,
+        dc.drawText(cx, 51 * scale, _labelFont, airportLabel,
                     Graphics.TEXT_JUSTIFY_CENTER);
 
         dc.setColor(0x93AEB5, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 115 * scale, _labelFont, "LOCAL TIME",
+        dc.drawText(cx, 99 * scale, _labelFont, "LOCAL TIME",
                     Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 140 * scale, _timeFont, localText,
+        dc.drawText(cx, 124 * scale, _timeFont, localText,
                     Graphics.TEXT_JUSTIFY_CENTER);
 
         dc.setColor(0x17333D, Graphics.COLOR_TRANSPARENT);
-        dc.fillRoundedRectangle(101 * scale, 239 * scale, 252 * scale, 52 * scale, 16 * scale);
+        dc.fillRoundedRectangle(77 * scale, 246 * scale, 300 * scale, 59 * scale, 18 * scale);
         dc.setColor(0x58D5E0, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 242 * scale, _utcFont, "UTC  " + utcText,
+        dc.drawText(cx, 251 * scale, _utcFont, "UTC  " + utcText,
                     Graphics.TEXT_JUSTIFY_CENTER);
 
         var category = "--";
@@ -150,20 +154,20 @@ class AirfieldClockView extends WatchUi.WatchFace {
         }
 
         dc.setColor(0x8EAAB0, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 298 * scale, _labelFont, "FIELD CONDITIONS  /  WIND FROM",
+        dc.drawText(cx, 309 * scale, _labelFont, "FIELD CONDITIONS  /  WIND FROM",
                     Graphics.TEXT_JUSTIFY_CENTER);
-        drawBadge(dc, 72 * scale, 322 * scale, 100 * scale, category,
+        drawBadge(dc, 38 * scale, 339 * scale, 116 * scale, category,
                   categoryColor(category), _badgeFont, scale);
-        drawBadge(dc, 179 * scale, 322 * scale, 100 * scale, direction,
+        drawBadge(dc, 169 * scale, 339 * scale, 116 * scale, direction,
                   0x183746, _badgeFont, scale);
-        drawBadge(dc, 286 * scale, 322 * scale, 100 * scale, speed,
+        drawBadge(dc, 300 * scale, 339 * scale, 116 * scale, speed,
                   0x183746, _badgeFont, scale);
 
         dc.setColor(0xACBFC3, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 364 * scale, _labelFont, temp + "   /   " + altim,
+        dc.drawText(cx, 385 * scale, _labelFont, temp + "   /   " + altim,
                     Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(0x637F87, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 389 * scale, Graphics.FONT_XTINY, observed,
+        dc.drawText(cx, 410 * scale, _statusFont, observed,
                     Graphics.TEXT_JUSTIFY_CENTER);
     }
 
@@ -195,30 +199,30 @@ function drawCompassRing(dc, cx, cy, scale, font) {
     // sensor, so this is a reference ring rather than a heading indicator.
     dc.setPenWidth(2);
     dc.setColor(0x294A52, Graphics.COLOR_TRANSPARENT);
-    dc.drawCircle(cx, cy, 215 * scale);
+    dc.drawCircle(cx, cy, 225 * scale);
     for (var i = 0; i < 24; i += 1) {
         var angle = i * Math.PI / 12.0;
         var dx = Math.sin(angle);
         var dy = -Math.cos(angle);
         var cardinal = i % 6 == 0;
         var major = i % 2 == 0;
-        var inner = cardinal ? 190 : (major ? 198 : 205);
+        var inner = cardinal ? 202 : (major ? 210 : 217);
         dc.setColor(cardinal ? 0x67D7E1 : (major ? 0x9CB4BB : 0x516C75),
                     Graphics.COLOR_TRANSPARENT);
         dc.drawLine(cx + dx * inner * scale, cy + dy * inner * scale,
-                    cx + dx * 214 * scale, cy + dy * 214 * scale);
+                    cx + dx * 224 * scale, cy + dy * 224 * scale);
     }
     dc.setColor(0x67D7E1, Graphics.COLOR_TRANSPARENT);
-    dc.drawText(cx, cy - 202 * scale, font, "N", Graphics.TEXT_JUSTIFY_CENTER);
+    dc.drawText(cx, cy - 214 * scale, font, "N", Graphics.TEXT_JUSTIFY_CENTER);
     dc.setColor(0xB4C8CD, Graphics.COLOR_TRANSPARENT);
-    dc.drawText(cx + 186 * scale, cy - 12 * scale, font, "E", Graphics.TEXT_JUSTIFY_CENTER);
-    dc.drawText(cx, cy + 188 * scale, font, "S", Graphics.TEXT_JUSTIFY_CENTER);
-    dc.drawText(cx - 186 * scale, cy - 12 * scale, font, "W", Graphics.TEXT_JUSTIFY_CENTER);
+    dc.drawText(cx + 204 * scale, cy - 8 * scale, font, "E", Graphics.TEXT_JUSTIFY_CENTER);
+    dc.drawText(cx, cy + 205 * scale, font, "S", Graphics.TEXT_JUSTIFY_CENTER);
+    dc.drawText(cx - 204 * scale, cy - 8 * scale, font, "W", Graphics.TEXT_JUSTIFY_CENTER);
 }
 
 function drawBadge(dc, x, y, width, label, background, font, scale) {
     dc.setColor(background, Graphics.COLOR_TRANSPARENT);
-    dc.fillRoundedRectangle(x, y, width, 38 * scale, 11 * scale);
+    dc.fillRoundedRectangle(x, y, width, 44 * scale, 12 * scale);
     dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
     dc.drawText(x + width / 2, y + 5 * scale, font, label, Graphics.TEXT_JUSTIFY_CENTER);
 }
