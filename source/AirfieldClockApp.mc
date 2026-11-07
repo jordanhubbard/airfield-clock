@@ -13,15 +13,19 @@ class AirfieldClockApp extends Application.AppBase {
         // This runs only for the visible face. onStart also runs in the
         // background process, where registering a new event can prevent the
         // pending service event from reaching onTemporalEvent.
-        if (Storage.getValue("homeAirport") == null) {
-            // Preserve existing installations that already selected a different
-            // display airport; KPAO is the initial home airport.
-            Storage.setValue("homeAirport", "KPAO");
+        var home = Storage.getValue("homeAirport");
+        if (!isValidAirportCode(home)) {
+            home = "KPAO";
+            Storage.setValue("homeAirport", home);
         }
-        if (Storage.getValue("airport") == null) {
-            Storage.setValue("airport", Storage.getValue("homeAirport"));
+        var airport = Storage.getValue("airport");
+        var repairedAirport = !isValidAirportCode(airport);
+        if (repairedAirport) {
+            Storage.setValue("airport", home);
+            Storage.setValue("airportMode", "selected");
+            Storage.deleteValue("metar");
         }
-        if (Storage.getValue("weatherScheduleVersion") != 3 ||
+        if (repairedAirport || Storage.getValue("weatherScheduleVersion") != 3 ||
             Background.getTemporalEventRegisteredTime() == null) {
             // An update can leave a registration from the previous build that
             // is no longer delivered. Replace it once when this version starts.

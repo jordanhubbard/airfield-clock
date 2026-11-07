@@ -1,5 +1,6 @@
 import Toybox.Application.Storage;
 import Toybox.Graphics;
+import Toybox.Lang;
 import Toybox.Math;
 import Toybox.System;
 import Toybox.Time;
@@ -67,12 +68,15 @@ class AirfieldClockView extends WatchUi.WatchFace {
 
         var airport = Storage.getValue("airport");
         if (airport == null) { airport = "KPAO"; }
-        var nearby = Storage.getValue("airportMode") == "nearby";
+        var mode = Storage.getValue("airportMode");
+        var nearby = mode instanceof String && mode.equals("nearby");
         var home = Storage.getValue("homeAirport");
         if (home == null) { home = "KPAO"; }
         var weather = Storage.getValue("metar");
         if (!(weather instanceof Dictionary)) { weather = null; }
-        if (weather != null && weather["airport"] != airport) { weather = null; }
+        if (weather != null &&
+            (!(weather["airport"] instanceof String) ||
+             !weather["airport"].equals(airport))) { weather = null; }
         var stale = false;
         if (weather != null) {
             var observedEpoch = weather["observedEpoch"];
@@ -88,7 +92,7 @@ class AirfieldClockView extends WatchUi.WatchFace {
         if (nearby) {
             airportLabel = weather == null ? "NEARBY  /  SEARCHING" : "NEARBY  /  " + airport;
         } else {
-            airportLabel = airport == home ? "HOME  /  " + airport : "AIRFIELD  /  " + airport;
+            airportLabel = airport.equals(home) ? "HOME  /  " + airport : "AIRFIELD  /  " + airport;
         }
         dc.drawText(cx, 51 * scale, _labelFont, airportLabel,
                     Graphics.TEXT_JUSTIFY_CENTER);
@@ -142,9 +146,9 @@ class AirfieldClockView extends WatchUi.WatchFace {
             observed = "METAR STALE";
         } else {
             var status = Storage.getValue("metarStatus");
-            if (status instanceof String && status != "OK") {
+            if (status instanceof String && !status.equals("OK")) {
                 var started = Storage.getValue("fetchEpoch");
-                if (status == "FETCHING" && started instanceof Number &&
+                if (status.equals("FETCHING") && started instanceof Number &&
                     Time.now().value() - started > 3 * 60) {
                     observed = "METAR TIMEOUT";
                 } else {
@@ -172,7 +176,8 @@ class AirfieldClockView extends WatchUi.WatchFace {
     }
 
     function updateNearbyPosition() {
-        if (Storage.getValue("airportMode") != "nearby") { return; }
+        var mode = Storage.getValue("airportMode");
+        if (!(mode instanceof String) || !mode.equals("nearby")) { return; }
         try {
             var conditions = Weather.getCurrentConditions();
             if (conditions == null || conditions.observationLocationPosition == null) { return; }
@@ -238,9 +243,10 @@ function pad3(value) {
 }
 
 function categoryColor(category) {
-    if (category == "VFR") { return 0x168C56; }
-    if (category == "MVFR") { return 0x246FBA; }
-    if (category == "IFR") { return 0xB33A3A; }
-    if (category == "LIFR") { return 0x804B9E; }
+    if (!(category instanceof String)) { return 0x3B5056; }
+    if (category.equals("VFR")) { return 0x168C56; }
+    if (category.equals("MVFR")) { return 0x246FBA; }
+    if (category.equals("IFR")) { return 0xB33A3A; }
+    if (category.equals("LIFR")) { return 0x804B9E; }
     return 0x3B5056;
 }

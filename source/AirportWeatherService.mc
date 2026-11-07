@@ -25,8 +25,10 @@ class AirportWeatherService extends System.ServiceDelegate {
         } catch (e) {
             // Continue this fetch even if the following retry cannot be set.
         }
-        _nearby = Storage.getValue("airportMode") == "nearby";
-        var url;
+        var mode = Storage.getValue("airportMode");
+        _nearby = mode instanceof String && mode.equals("nearby");
+        var url = "https://aviationweather.gov/api/data/metar";
+        var parameters = {"format" => "geojson"};
         if (_nearby) {
             _latitude = Storage.getValue("nearbyLat");
             _longitude = Storage.getValue("nearbyLon");
@@ -38,16 +40,16 @@ class AirportWeatherService extends System.ServiceDelegate {
                 finish();
                 return;
             }
-            url = "https://aviationweather.gov/api/data/metar?bbox=" +
-                  (_latitude - 0.8).toString() + "," +
-                  (_longitude - 1.1).toString() + "," +
-                  (_latitude + 0.8).toString() + "," +
-                  (_longitude + 1.1).toString() + "&format=geojson";
+            parameters["bbox"] = (_latitude - 0.8).toString() + "," +
+                                 (_longitude - 1.1).toString() + "," +
+                                 (_latitude + 0.8).toString() + "," +
+                                 (_longitude + 1.1).toString();
         } else {
             var airport = Storage.getValue("airport");
-            if (airport == null) { airport = "KPAO"; }
-            url = "https://aviationweather.gov/api/data/metar?ids=" + airport +
-                  "&format=geojson";
+            if (!(airport instanceof String) || airport.length() != 4) {
+                airport = "KPAO";
+            }
+            parameters["ids"] = airport;
         }
         Storage.setValue("metarStatus", "FETCHING");
         Storage.setValue("fetchEpoch", Time.now().value());
@@ -57,7 +59,7 @@ class AirportWeatherService extends System.ServiceDelegate {
             :headers => {"User-Agent" => "AirfieldClock/0.2", "Accept" => "application/json"}
         };
         try {
-            Communications.makeWebRequest(url, null, options, method(:onWeather));
+            Communications.makeWebRequest(url, parameters, options, method(:onWeather));
         } catch (e) {
             Storage.setValue("metarStatus", "REQUEST ERROR");
             finish();
@@ -109,7 +111,9 @@ class AirportWeatherService extends System.ServiceDelegate {
                 var entry = features[j];
                 if (!(entry instanceof Dictionary)) { continue; }
                 var entryReport = entry["properties"];
-                if (entryReport instanceof Dictionary && entryReport["id"] == target) {
+                if (entryReport instanceof Dictionary &&
+                    entryReport["id"] instanceof String &&
+                    entryReport["id"].equals(target)) {
                     report = entryReport;
                     break;
                 }
