@@ -21,15 +21,19 @@ class AirfieldClockApp extends Application.AppBase {
         if (Storage.getValue("airport") == null) {
             Storage.setValue("airport", Storage.getValue("homeAirport"));
         }
-        if (Background.getTemporalEventRegisteredTime() == null ||
-            Storage.getValue("metar") == null) {
-            // Retry promptly after installation, app updates, and failed fetches.
-            var next = Time.now();
-            var last = Background.getLastTemporalEventTime();
-            if (last != null && last.add(new Time.Duration(5 * 60)).value() > next.value()) {
-                next = last.add(new Time.Duration(5 * 60));
+        if (Background.getTemporalEventRegisteredTime() == null) {
+            // Watch faces retain the five-minute temporal-event limit across
+            // launches. A six-minute delay is safe even when the last event
+            // time is unavailable after an app update or device restart.
+            try {
+                Background.registerForTemporalEvent(Time.now().add(new Time.Duration(6 * 60)));
+                if (Storage.getValue("metar") == null &&
+                    Storage.getValue("metarStatus") == null) {
+                    Storage.setValue("metarStatus", "WAIT FETCH");
+                }
+            } catch (e) {
+                Storage.setValue("metarStatus", "SCHEDULE ERROR");
             }
-            Background.registerForTemporalEvent(next);
         }
         return [new AirfieldClockView()];
     }

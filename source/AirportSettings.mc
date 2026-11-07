@@ -109,10 +109,9 @@ function setAirport(code) {
 }
 
 function scheduleWeatherSoon() {
-    var last = Background.getLastTemporalEventTime();
-    var next = Time.now();
-    if (last != null && last.add(new Time.Duration(5 * 60)).value() > next.value()) {
-        next = last.add(new Time.Duration(5 * 60));
+    try {
+        Background.registerForTemporalEvent(Time.now().add(new Time.Duration(6 * 60)));
+    } catch (e) {
+        Storage.setValue("metarStatus", "SCHEDULE ERROR");
     }
-    Background.registerForTemporalEvent(next);
 }
