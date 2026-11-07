@@ -9,7 +9,10 @@ class AirfieldClockApp extends Application.AppBase {
         AppBase.initialize();
     }
 
-    function onStart(state) {
+    function getInitialView() {
+        // This runs only for the visible face. onStart also runs in the
+        // background process, where registering a new event can prevent the
+        // pending service event from reaching onTemporalEvent.
         if (Storage.getValue("homeAirport") == null) {
             // Preserve existing installations that already selected a different
             // display airport; KPAO is the initial home airport.
@@ -28,9 +31,6 @@ class AirfieldClockApp extends Application.AppBase {
             }
             Background.registerForTemporalEvent(next);
         }
-    }
-
-    function getInitialView() {
         return [new AirfieldClockView()];
     }
 

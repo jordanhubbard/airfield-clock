@@ -38,10 +38,10 @@ On macOS, SDK Manager's active SDK is discovered from `~/Library/Application Sup
 
 ```bash
 export GARMIN_DEVELOPER_KEY=/absolute/path/to/your/developer_key.der
-# On systems without the macOS SDK Manager path:
-export GARMIN_SDK_HOME=/absolute/path/to/connectiq-sdk
 ./scripts/build.sh
 ```
+
+On systems without the macOS SDK Manager path, set `GARMIN_SDK_HOME=/absolute/path/to/connectiq-sdk` before running the script.
 
 The signed device build is written to `bin/AIRFLD.PRG`. The script targets `venu445mm`, uses `monkey.jungle` and `manifest.xml`, and builds a release binary. `bin/` and developer keys are ignored by Git. To build an optional Connect IQ Store package, run:
 
@@ -54,4 +54,4 @@ The `.iq` file is **not** the USB installation file. Store publication requires 
 
 ## Development status
 
-The SDK 9.3.0 release build compiles for `venu445mm`, and the Aviation Weather Center currently responds to KPAO and nearby-airport queries. The latest weather-fetch changes have not yet been verified on a physical watch. If METAR stays blank after installing the latest release, report the exact status on the bottom line; it distinguishes a missing location from a request or network failure.
+The SDK 9.3.0 release build compiles for `venu445mm`. In the simulator, the background service received an HTTP 200 response for KPAO after weather-timer registration moved to the foreground startup. The Aviation Weather Center also responds to nearby-airport queries. The updated build has not yet been verified on a physical watch. If METAR stays blank after installing the latest release, report the exact status on the bottom line; it distinguishes a missing location from a request or network failure.
