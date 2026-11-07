@@ -6,7 +6,7 @@ import Toybox.WatchUi;
 
 class AirportSettingsMenu extends WatchUi.Menu2 {
     function initialize() {
-        Menu2.initialize({:title => "Airports"});
+        Menu2.initialize({:title => "Airfield Clock"});
         var home = Storage.getValue("homeAirport");
         if (home == null) { home = "KPAO"; }
         var current = Storage.getValue("airport");
@@ -15,6 +15,10 @@ class AirportSettingsMenu extends WatchUi.Menu2 {
         addItem(new WatchUi.MenuItem("Set home ICAO", home, :home_enter, null));
         addItem(new WatchUi.MenuItem("Show another ICAO", current, :display_enter, null));
         addItem(new WatchUi.MenuItem("Nearby reporting airport", null, :nearby, null));
+        var units = Storage.getValue("metarUnits");
+        addItem(new WatchUi.MenuItem("METAR units",
+                 units instanceof String && units.equals("us") ? "inHg / F" : "hPa / C",
+                 :metar_units, null));
         addItem(new WatchUi.MenuItem("KPAO  Palo Alto", null, "KPAO", null));
         addItem(new WatchUi.MenuItem("KSQL  San Carlos", null, "KSQL", null));
         addItem(new WatchUi.MenuItem("KSJC  San Jose", null, "KSJC", null));
@@ -47,8 +51,33 @@ class AirportSettingsDelegate extends WatchUi.Menu2InputDelegate {
             Storage.setValue("metarStatus", "WAIT LOCATION");
             scheduleWeatherSoon();
             WatchUi.popView(WatchUi.SLIDE_IMMEDIATE);
+        } else if (id == :metar_units) {
+            WatchUi.pushView(new MetarUnitsMenu(), new MetarUnitsDelegate(),
+                             WatchUi.SLIDE_IMMEDIATE);
         } else if (id instanceof String) {
             setAirport(id);
+            WatchUi.popView(WatchUi.SLIDE_IMMEDIATE);
+        }
+    }
+}
+
+class MetarUnitsMenu extends WatchUi.Menu2 {
+    function initialize() {
+        Menu2.initialize({:title => "METAR units"});
+        addItem(new WatchUi.MenuItem("hPa / °C", null, :metric_units, null));
+        addItem(new WatchUi.MenuItem("inHg / °F", null, :us_units, null));
+    }
+}
+
+class MetarUnitsDelegate extends WatchUi.Menu2InputDelegate {
+    function initialize() {
+        Menu2InputDelegate.initialize();
+    }
+
+    function onSelect(item) {
+        var id = item.getId();
+        if (id == :metric_units || id == :us_units) {
+            Storage.setValue("metarUnits", id == :us_units ? "us" : "metric");
             WatchUi.popView(WatchUi.SLIDE_IMMEDIATE);
         }
     }

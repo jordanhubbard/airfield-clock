@@ -18,11 +18,11 @@ class AirfieldClockView extends WatchUi.WatchFace {
 
     function initialize() {
         WatchFace.initialize();
-        _timeFont = Graphics.getVectorFont({:face => "RobotoCondensedBold", :size => 118});
-        _utcFont = Graphics.getVectorFont({:face => "RobotoCondensedBold", :size => 48});
-        _badgeFont = Graphics.getVectorFont({:face => "RobotoCondensedBold", :size => 31});
-        _labelFont = Graphics.getVectorFont({:face => "RobotoRegular", :size => 25});
-        _statusFont = Graphics.getVectorFont({:face => "RobotoRegular", :size => 17});
+        _timeFont = Graphics.getVectorFont({:face => "RobotoCondensedBold", :size => 130});
+        _utcFont = Graphics.getVectorFont({:face => "RobotoCondensedBold", :size => 53});
+        _badgeFont = Graphics.getVectorFont({:face => "RobotoCondensedBold", :size => 34});
+        _labelFont = Graphics.getVectorFont({:face => "RobotoRegular", :size => 27});
+        _statusFont = Graphics.getVectorFont({:face => "RobotoRegular", :size => 18});
         if (_timeFont == null) { _timeFont = Graphics.FONT_NUMBER_HOT; }
         if (_utcFont == null) { _utcFont = Graphics.FONT_MEDIUM; }
         if (_badgeFont == null) { _badgeFont = Graphics.FONT_SMALL; }
@@ -94,27 +94,29 @@ class AirfieldClockView extends WatchUi.WatchFace {
         } else {
             airportLabel = airport.equals(home) ? "HOME  /  " + airport : "AIRFIELD  /  " + airport;
         }
-        dc.drawText(cx, 51 * scale, _labelFont, airportLabel,
+        dc.drawText(cx, 47 * scale, _labelFont, airportLabel,
                     Graphics.TEXT_JUSTIFY_CENTER);
 
         dc.setColor(0x93AEB5, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 99 * scale, _labelFont, "LOCAL TIME",
+        dc.drawText(cx, 93 * scale, _labelFont, "LOCAL TIME",
                     Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 124 * scale, _timeFont, localText,
+        dc.drawText(cx, 114 * scale, _timeFont, localText,
                     Graphics.TEXT_JUSTIFY_CENTER);
 
         dc.setColor(0x17333D, Graphics.COLOR_TRANSPARENT);
-        dc.fillRoundedRectangle(77 * scale, 246 * scale, 300 * scale, 59 * scale, 18 * scale);
+        dc.fillRoundedRectangle(62 * scale, 242 * scale, 330 * scale, 65 * scale, 18 * scale);
         dc.setColor(0x58D5E0, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 251 * scale, _utcFont, "UTC  " + utcText,
+        dc.drawText(cx, 247 * scale, _utcFont, "UTC  " + utcText,
                     Graphics.TEXT_JUSTIFY_CENTER);
 
         var category = "--";
         var direction = "---";
         var speed = "-- KT";
-        var temp = "-- C";
-        var altim = "---- HPA";
+        var units = Storage.getValue("metarUnits");
+        var useUsUnits = units instanceof String && units.equals("us");
+        var temp = useUsUnits ? "-- F" : "-- C";
+        var altim = useUsUnits ? "--.-- INHG" : "---- HPA";
         var observed = "METAR PENDING";
         if (weather != null && !stale) {
             if (weather["category"] != null) { category = weather["category"]; }
@@ -134,10 +136,8 @@ class AirfieldClockView extends WatchUi.WatchFace {
                     }
                 }
             }
-            if (weather["temp"] != null) { temp = weather["temp"].toString() + " C"; }
-            if (weather["altim"] != null) {
-                altim = weather["altim"].toNumber().toString() + " HPA";
-            }
+            temp = formatMetarTemperature(weather["temp"], useUsUnits);
+            altim = formatMetarPressure(weather["altim"], useUsUnits);
             var observation = weather["observed"];
             if (observation instanceof String && observation.length() >= 16) {
                 observed = "METAR " + observation.substring(11, 16) + "Z";
@@ -158,7 +158,7 @@ class AirfieldClockView extends WatchUi.WatchFace {
         }
 
         dc.setColor(0x8EAAB0, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 309 * scale, _labelFont, "FIELD CONDITIONS  /  WIND FROM",
+        dc.drawText(cx, 305 * scale, _labelFont, "FIELD CONDITIONS  /  WIND FROM",
                     Graphics.TEXT_JUSTIFY_CENTER);
         drawBadge(dc, 38 * scale, 339 * scale, 116 * scale, category,
                   categoryColor(category), _badgeFont, scale);
@@ -168,10 +168,10 @@ class AirfieldClockView extends WatchUi.WatchFace {
                   0x183746, _badgeFont, scale);
 
         dc.setColor(0xACBFC3, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 385 * scale, _labelFont, temp + "   /   " + altim,
+        dc.drawText(cx, 385 * scale, _labelFont, temp + "  /  " + altim,
                     Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(0x637F87, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 410 * scale, _statusFont, observed,
+        dc.drawText(cx, 416 * scale, _statusFont, observed,
                     Graphics.TEXT_JUSTIFY_CENTER);
     }
 
@@ -202,8 +202,8 @@ class AirfieldClockView extends WatchUi.WatchFace {
 function drawCompassRing(dc, cx, cy, scale, font) {
     // Fixed north-up scale. Connect IQ watch faces cannot read the compass
     // sensor, so this is a reference ring rather than a heading indicator.
-    dc.setPenWidth(2);
-    dc.setColor(0x294A52, Graphics.COLOR_TRANSPARENT);
+    dc.setPenWidth(3);
+    dc.setColor(0x3A6670, Graphics.COLOR_TRANSPARENT);
     dc.drawCircle(cx, cy, 225 * scale);
     for (var i = 0; i < 24; i += 1) {
         var angle = i * Math.PI / 12.0;
@@ -249,4 +249,26 @@ function categoryColor(category) {
     if (category.equals("IFR")) { return 0xB33A3A; }
     if (category.equals("LIFR")) { return 0x804B9E; }
     return 0x3B5056;
+}
+
+function formatMetarTemperature(value, useUsUnits) {
+    var celsius = value instanceof String ? value.toFloat() : value;
+    if (!(celsius instanceof Number || celsius instanceof Float ||
+          celsius instanceof Double)) { return useUsUnits ? "-- F" : "-- C"; }
+    if (useUsUnits) {
+        var fahrenheit = celsius * 1.8 + 32.0;
+        return fahrenheit.format("%.0f") + " F";
+    }
+    return Math.round(celsius).toNumber().toString() + " C";
+}
+
+function formatMetarPressure(value, useUsUnits) {
+    var hectopascals = value instanceof String ? value.toFloat() : value;
+    if (!(hectopascals instanceof Number || hectopascals instanceof Float ||
+          hectopascals instanceof Double)) { return useUsUnits ? "--.-- INHG" : "---- HPA"; }
+    if (useUsUnits) {
+        var inches = hectopascals * 0.0295299830714;
+        return inches.format("%.2f") + " INHG";
+    }
+    return Math.round(hectopascals).toNumber().toString() + " HPA";
 }
