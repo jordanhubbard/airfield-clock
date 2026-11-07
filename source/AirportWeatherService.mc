@@ -18,10 +18,11 @@ class AirportWeatherService extends System.ServiceDelegate {
     }
 
     function onTemporalEvent() {
-        // Keep the next attempt registered even if a request times out.
+        // Keep a short retry registered even if the phone is disconnected or
+        // the request times out. A successful response slows polling below.
         Storage.setValue("metarStatus", "STARTED");
         try {
-            Background.registerForTemporalEvent(new Time.Duration(30 * 60));
+            Background.registerForTemporalEvent(new Time.Duration(6 * 60));
         } catch (e) {
             // Continue this fetch even if the following retry cannot be set.
         }
@@ -155,6 +156,11 @@ class AirportWeatherService extends System.ServiceDelegate {
             "observedEpoch" => observedEpoch
         });
         Storage.setValue("metarStatus", "OK");
+        try {
+            Background.registerForTemporalEvent(new Time.Duration(30 * 60));
+        } catch (e) {
+            // The six-minute retry remains available if registration fails.
+        }
         finish();
     }
 
